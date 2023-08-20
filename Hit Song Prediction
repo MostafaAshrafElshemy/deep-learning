@@ -1,0 +1,295 @@
+pip install wget
+Defaulting to user installation because normal site-packages is not writeable
+Requirement already satisfied: wget in ./.local/lib/python3.7/site-packages (3.2)
+WARNING: You are using pip version 20.3.1; however, version 21.2.4 is available.
+You should consider upgrading via the '/opt/tljh/user/bin/python -m pip install --upgrade pip' command.
+Note: you may need to restart the kernel to use updated packages.
+Importing necessary libraries
+import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn import preprocessing
+import tensorflow as tf
+from tensorflow.keras.models import load_model
+%matplotlib inline
+# Set random seed
+np.random.seed(0)
+Importing dataset
+url = "https://cainvas-static.s3.amazonaws.com/media/user_data/cainvas-admin/dataset-of-90s.csv"
+!wget https://cainvas-static.s3.amazonaws.com/media/user_data/cainvas-admin/dataset-of-90s.csv
+--2021-09-02 03:35:51--  https://cainvas-static.s3.amazonaws.com/media/user_data/cainvas-admin/dataset-of-90s.csv
+Resolving cainvas-static.s3.amazonaws.com (cainvas-static.s3.amazonaws.com)... 52.219.64.88
+Connecting to cainvas-static.s3.amazonaws.com (cainvas-static.s3.amazonaws.com)|52.219.64.88|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 856926 (837K) [text/csv]
+Saving to: ‘dataset-of-90s.csv’
+
+dataset-of-90s.csv  100%[===================>] 836.84K  --.-KB/s    in 0.004s  
+
+2021-09-02 03:35:51 (183 MB/s) - ‘dataset-of-90s.csv’ saved [856926/856926]
+
+data = pd.read_csv(url)
+data.head()
+track	artist	uri	danceability	energy	key	loudness	mode	speechiness	acousticness	instrumentalness	liveness	valence	tempo	duration_ms	time_signature	chorus_hit	sections	target
+0	Misty Roses	Astrud Gilberto	spotify:track:50RBM1j1Dw7WYmsGsWg9Tm	0.527	0.316	1	-15.769	1	0.0310	0.693000	0.00699	0.1680	0.543	116.211	158840	4	53.89523	6	0
+1	Never Ever	All Saints	spotify:track:5FTz9qQ94PyUHETyAyfYZN	0.738	0.541	1	-5.485	1	0.0311	0.559000	0.00000	0.0492	0.309	134.187	387573	4	32.16853	16	1
+2	Soul Sermon	Gregg Karukas	spotify:track:6m24oe3lk1UMxq9zq4iPFi	0.736	0.419	0	-10.662	1	0.0300	0.693000	0.49500	0.0809	0.265	93.982	237267	4	42.05369	9	0
+3	Clarinet Marmalade - Live	Alton Purnell	spotify:track:5FOXuiLI6knVtgMUjWKj6x	0.565	0.594	5	-13.086	1	0.0646	0.655000	0.92600	0.6750	0.763	114.219	375933	4	80.99693	10	0
+4	До смерті і довше - Drum & Base and Rock Remix	Skryabin	spotify:track:6CxyIPTqSPvAPXfrIZczs4	0.513	0.760	4	-10.077	1	0.0355	0.000017	0.00339	0.1530	0.961	153.166	430653	4	25.57331	20	0
+Preprocessing
+data.target.value_counts()
+1    2760
+0    2760
+Name: target, dtype: int64
+data = data.sample(frac=1)
+data.head()
+track	artist	uri	danceability	energy	key	loudness	mode	speechiness	acousticness	instrumentalness	liveness	valence	tempo	duration_ms	time_signature	chorus_hit	sections	target
+5253	Mètché Dershé (When Am I Going to Reach There?)	Mulatu Astatke	spotify:track:4MpyYQeDHw3wHb4VNTbWQY	0.632	0.513	7	-8.922	1	0.0351	0.78300	0.482000	0.215	0.383	126.359	240187	4	30.75284	13	0
+1902	Can't Truss It	Public Enemy	spotify:track:5r5uZvXHbE4X6CdhnSATtX	0.802	0.872	11	-7.651	1	0.1390	0.00196	0.000000	0.132	0.607	101.664	321573	4	30.72992	12	1
+405	On Bended Knee	Boyz II Men	spotify:track:7MYmo0JJJDmu4MZTSAF9y3	0.631	0.516	8	-8.225	1	0.0353	0.41300	0.000000	0.115	0.180	116.654	329800	4	43.33309	14	1
+5390	Who Cares	Stan Getz	spotify:track:23FzH0YCzfSTwq0aFoKa1o	0.505	0.294	0	-17.080	1	0.0332	0.80700	0.069200	0.106	0.582	105.628	421000	4	39.24387	18	0
+142	Suspicious (West Coast Experimental Pop Art Mix)	Psychic TV	spotify:track:4As0uOWi3MhnuaKfkm2eC2	0.311	0.255	0	-17.118	1	0.0336	0.68900	0.000645	0.119	0.182	96.419	446107	3	71.80261	15	0
+data.info()
+<class 'pandas.core.frame.DataFrame'>
+Int64Index: 5520 entries, 5253 to 2732
+Data columns (total 19 columns):
+ #   Column            Non-Null Count  Dtype  
+---  ------            --------------  -----  
+ 0   track             5520 non-null   object 
+ 1   artist            5520 non-null   object 
+ 2   uri               5520 non-null   object 
+ 3   danceability      5520 non-null   float64
+ 4   energy            5520 non-null   float64
+ 5   key               5520 non-null   int64  
+ 6   loudness          5520 non-null   float64
+ 7   mode              5520 non-null   int64  
+ 8   speechiness       5520 non-null   float64
+ 9   acousticness      5520 non-null   float64
+ 10  instrumentalness  5520 non-null   float64
+ 11  liveness          5520 non-null   float64
+ 12  valence           5520 non-null   float64
+ 13  tempo             5520 non-null   float64
+ 14  duration_ms       5520 non-null   int64  
+ 15  time_signature    5520 non-null   int64  
+ 16  chorus_hit        5520 non-null   float64
+ 17  sections          5520 non-null   int64  
+ 18  target            5520 non-null   int64  
+dtypes: float64(10), int64(6), object(3)
+memory usage: 862.5+ KB
+data.drop(["track","artist","uri"],axis=1,inplace=True)
+unscaled_inputs = data.iloc[:,0:-1]
+target = data.iloc[:,[-1]]
+scaled_inputs = preprocessing.scale(unscaled_inputs)
+scaled_inputs
+array([[ 0.36098971, -0.35391869,  0.49470991, ...,  0.21981357,
+        -0.51387208,  0.41736857],
+       [ 1.3035659 ,  1.06974454,  1.63396677, ...,  0.21981357,
+        -0.51502154,  0.1943842 ],
+       [ 0.35544514, -0.34202178,  0.77952412, ...,  0.21981357,
+         0.11703873,  0.64035294],
+       ...,
+       [-1.64059856,  1.37906413, -0.07491852, ...,  0.21981357,
+         1.10771952, -1.14352202],
+       [ 0.11148424,  0.38368956, -0.92936117, ...,  0.21981357,
+        -0.82875902,  0.1943842 ],
+       [-0.71465607,  1.20061052,  1.06433834, ...,  0.21981357,
+        -0.38342709, -0.69755328]])
+samples_count = scaled_inputs.shape[0]
+samples_count
+5520
+train_samples_count = int(0.8*samples_count)
+validation_samples_count = int(0.1*samples_count)
+test_samples_count = samples_count - train_samples_count - validation_samples_count
+# train:
+train_inputs = scaled_inputs[:train_samples_count]
+train_targets = target[:train_samples_count]
+# validation:
+validation_inputs = scaled_inputs[train_samples_count:train_samples_count+validation_samples_count]
+validation_targets = target[train_samples_count:train_samples_count+validation_samples_count]
+# test:
+test_inputs = scaled_inputs[train_samples_count+validation_samples_count:]
+test_targets = target[train_samples_count+validation_samples_count:]
+# Print the number of targets that are 1s, the total number of samples, and the proportion for training, validation, and test.
+print(np.sum(train_targets), train_samples_count, np.sum(train_targets) / train_samples_count)
+print(np.sum(validation_targets), validation_samples_count, np.sum(validation_targets) / validation_samples_count)
+print(np.sum(test_targets), test_samples_count, np.sum(test_targets) / test_samples_count)
+target    2180
+dtype: int64 4416 target    0.493659
+dtype: float64
+target    297
+dtype: int64 552 target    0.538043
+dtype: float64
+target    283
+dtype: int64 552 target    0.512681
+dtype: float64
+Saving preprocessed data
+np.savez('Spotify_data_train', inputs=train_inputs, targets=train_targets)
+np.savez('Spotify_data_validation', inputs=validation_inputs, targets=validation_targets)
+np.savez('Spotify_data_test', inputs=test_inputs, targets=test_targets)
+npz = np.load('Spotify_data_train.npz')
+train_inputs, train_targets = npz['inputs'].astype(np.float), npz['targets'].astype(np.int)
+npz = np.load('Spotify_data_validation.npz')
+validation_inputs, validation_targets = npz['inputs'].astype(np.float), npz['targets'].astype(np.int)
+npz = np.load('Spotify_data_test.npz')
+test_inputs, test_targets = npz['inputs'].astype(np.float), npz['targets'].astype(np.int)
+Model
+input_size = 15 
+hidden_layer_size = 50 
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(hidden_layer_size, activation='relu'),
+    tf.keras.layers.Dense(hidden_layer_size, activation='relu'), 
+    tf.keras.layers.Dense(hidden_layer_size, activation='relu'),
+    tf.keras.layers.Dense(2, activation='relu'),
+    tf.keras.layers.Dense(1, activation = 'sigmoid')
+
+])
+model.compile(optimizer="adam", loss='binary_crossentropy', metrics=['accuracy'])
+batch_size = 300
+max_epochs = 20
+
+history = model.fit(train_inputs, 
+                    train_targets,
+                    batch_size=batch_size, 
+                    epochs=max_epochs,
+                    validation_data=(validation_inputs, validation_targets), 
+                    verbose = 2)
+Epoch 1/20
+15/15 - 0s - loss: 0.6428 - accuracy: 0.6497 - val_loss: 0.6081 - val_accuracy: 0.7138
+Epoch 2/20
+15/15 - 0s - loss: 0.5709 - accuracy: 0.7407 - val_loss: 0.5270 - val_accuracy: 0.7645
+Epoch 3/20
+15/15 - 0s - loss: 0.4929 - accuracy: 0.7815 - val_loss: 0.4591 - val_accuracy: 0.8007
+Epoch 4/20
+15/15 - 0s - loss: 0.4391 - accuracy: 0.8048 - val_loss: 0.4201 - val_accuracy: 0.8170
+Epoch 5/20
+15/15 - 0s - loss: 0.4065 - accuracy: 0.8157 - val_loss: 0.3976 - val_accuracy: 0.8261
+Epoch 6/20
+15/15 - 0s - loss: 0.3856 - accuracy: 0.8279 - val_loss: 0.3864 - val_accuracy: 0.8261
+Epoch 7/20
+15/15 - 0s - loss: 0.3750 - accuracy: 0.8365 - val_loss: 0.3919 - val_accuracy: 0.8315
+Epoch 8/20
+15/15 - 0s - loss: 0.3660 - accuracy: 0.8408 - val_loss: 0.3818 - val_accuracy: 0.8388
+Epoch 9/20
+15/15 - 0s - loss: 0.3594 - accuracy: 0.8422 - val_loss: 0.3765 - val_accuracy: 0.8424
+Epoch 10/20
+15/15 - 0s - loss: 0.3541 - accuracy: 0.8433 - val_loss: 0.3749 - val_accuracy: 0.8424
+Epoch 11/20
+15/15 - 0s - loss: 0.3505 - accuracy: 0.8456 - val_loss: 0.3778 - val_accuracy: 0.8424
+Epoch 12/20
+15/15 - 0s - loss: 0.3464 - accuracy: 0.8501 - val_loss: 0.3943 - val_accuracy: 0.8370
+Epoch 13/20
+15/15 - 0s - loss: 0.3454 - accuracy: 0.8501 - val_loss: 0.3817 - val_accuracy: 0.8388
+Epoch 14/20
+15/15 - 0s - loss: 0.3415 - accuracy: 0.8542 - val_loss: 0.3834 - val_accuracy: 0.8424
+Epoch 15/20
+15/15 - 0s - loss: 0.3385 - accuracy: 0.8537 - val_loss: 0.3762 - val_accuracy: 0.8442
+Epoch 16/20
+15/15 - 0s - loss: 0.3351 - accuracy: 0.8548 - val_loss: 0.3804 - val_accuracy: 0.8406
+Epoch 17/20
+15/15 - 0s - loss: 0.3326 - accuracy: 0.8558 - val_loss: 0.3812 - val_accuracy: 0.8370
+Epoch 18/20
+15/15 - 0s - loss: 0.3304 - accuracy: 0.8591 - val_loss: 0.3794 - val_accuracy: 0.8351
+Epoch 19/20
+15/15 - 0s - loss: 0.3286 - accuracy: 0.8612 - val_loss: 0.3899 - val_accuracy: 0.8315
+Epoch 20/20
+15/15 - 0s - loss: 0.3275 - accuracy: 0.8596 - val_loss: 0.3816 - val_accuracy: 0.8370
+model.summary()
+Model: "sequential"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+dense (Dense)                (None, 50)                800       
+_________________________________________________________________
+dense_1 (Dense)              (None, 50)                2550      
+_________________________________________________________________
+dense_2 (Dense)              (None, 50)                2550      
+_________________________________________________________________
+dense_3 (Dense)              (None, 2)                 102       
+_________________________________________________________________
+dense_4 (Dense)              (None, 1)                 3         
+=================================================================
+Total params: 6,005
+Trainable params: 6,005
+Non-trainable params: 0
+_________________________________________________________________
+Saving the model
+model.save("song.h5")
+#model = load_model("songs.h5")
+Analysis
+print(f"Training loss at epoch 1: {history.history['loss'][0]}")
+print(f"Training loss at epoch 20: {history.history['loss'][19]}")
+print(f"Validation loss at epoch 1: {history.history['loss'][0]}")
+print(f"Validation loss at epoch 20: {history.history['loss'][19]}")
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.legend(['Training loss', 'Validation loss'])
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+Training loss at epoch 1: 0.6428424715995789
+Training loss at epoch 20: 0.32749688625335693
+Validation loss at epoch 1: 0.6428424715995789
+Validation loss at epoch 20: 0.32749688625335693
+Text(0, 0.5, 'Loss')
+
+print(f"Training accuracy at epoch 1: {history.history['accuracy'][0]}")
+print(f"Training accuracy at epoch 20: {history.history['accuracy'][19]}")
+print(f"Validation accuracy at epoch 20: {history.history['val_accuracy'][0]}")
+print(f"Validation accuracy at epoch 20: {history.history['val_accuracy'][19]}")
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.legend(['Training accuracy', 'Validation accuracy'])
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+Training accuracy at epoch 1: 0.6496829986572266
+Training accuracy at epoch 20: 0.8596014380455017
+Validation accuracy at epoch 20: 0.7137681245803833
+Validation accuracy at epoch 20: 0.8369565010070801
+Text(0, 0.5, 'Accuracy')
+
+Prediction
+pred = model.predict(test_inputs)
+#pred
+"""for i in pred:
+    if i >= 0.6:
+        print("Hit")
+    else:
+        print("Not a Hit")"""
+'for i in pred:\n    if i >= 0.6:\n        print("Hit")\n    else:\n        print("Not a Hit")'
+Evaluation
+test_loss, test_accuracy = model.evaluate(test_inputs, test_targets, verbose = 0)
+print('Test loss: {0:.2f}. Test accuracy: {1:.2f}%'.format(test_loss, test_accuracy*100.))
+Test loss: 0.38. Test accuracy: 86.05%
+DeepCC
+!deepCC song.h5
+[INFO]
+Reading [keras model] 'song.h5'
+[SUCCESS]
+Saved 'song_deepC/song.onnx'
+[INFO]
+Reading [onnx model] 'song_deepC/song.onnx'
+[INFO]
+Model info:
+  ir_vesion : 4
+  doc       : 
+[WARNING]
+[ONNX]: terminal (input/output) dense_input's shape is less than 1. Changing it to 1.
+[WARNING]
+[ONNX]: terminal (input/output) dense_4's shape is less than 1. Changing it to 1.
+WARN (GRAPH): found operator node with the same name (dense_4) as io node.
+[INFO]
+Running DNNC graph sanity check ...
+[SUCCESS]
+Passed sanity check.
+[INFO]
+Writing C++ file 'song_deepC/song.cpp'
+[INFO]
+deepSea model files are ready in 'song_deepC/' 
+[RUNNING COMMAND]
+g++ -std=c++11 -O3 -fno-rtti -fno-exceptions -I. -I/opt/tljh/user/lib/python3.7/site-packages/deepC-0.13-py3.7-linux-x86_64.egg/deepC/include -isystem /opt/tljh/user/lib/python3.7/site-packages/deepC-0.13-py3.7-linux-x86_64.egg/deepC/packages/eigen-eigen-323c052e1731 "song_deepC/song.cpp" -D_AITS_MAIN -o "song_deepC/song.exe"
+[RUNNING COMMAND]
+size "song_deepC/song.exe"
+   text	   data	    bss	    dec	    hex	filename
+ 145355	   2968	    760	 149083	  2465b	song_deepC/song.exe
+[SUCCESS]
+Saved model as executable "song_deepC/song.exe"
